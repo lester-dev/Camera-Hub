@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Camera Hub – Philippines Photography Marketplace</title>
+  <meta name="description" content="Philippines' premier photography marketplace for DSLR, mirrorless cameras, and lenses featuring real-time stock transactions, secure GCash, Maya and Bank Transfer checkout, and seller analytics." />
+  <meta property="og:title" content="Camera Hub – Philippines Photography Marketplace" />
+  <meta property="og:description" content="Philippines' premier photography marketplace for DSLR, mirrorless cameras, and lenses featuring real-time stock transactions, secure GCash, Maya and Bank Transfer checkout, and seller analytics." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="site-header" id="siteHeader">
+    <div class="container header-inner">
+      <a href="#" class="logo" id="logoLink" aria-label="Camera Hub home">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/>
+          <circle cx="12" cy="13.5" r="3.5"/>
+        </svg>
+        <span class="logo-text">CAMERA<span class="logo-accent">HUB</span></span>
+      </a>
+
+      <form class="search" id="searchForm" role="search">
+        <input type="search" id="searchInput" placeholder="Search cameras, lenses, brands…" aria-label="Search products" autocomplete="off" />
+        <button type="submit" aria-label="Search">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        </button>
+      </form>
+
+      <nav class="header-actions">
+        <!-- Separate Seller Portal & Buyer Auth Controls -->
+        <a href="/seller.html" class="view-switch-btn" id="sellerNavBtn" title="Access Camera Hub Merchant Center">
+          <span class="switch-dot"></span>
+          <span id="sellerNavLabel">Seller Portal</span>
+        </a>
+
+        <!-- Customer Purchases / Order Tracking Button -->
+        <button class="btn btn-ghost" id="buyerOrdersNavBtn" type="button" hidden title="View My Purchases and Order Status">
+          My Orders
+        </button>
+
+        <span class="user-chip" id="userChip" hidden></span>
+        <button class="btn btn-ghost" id="authBtn" type="button">Log in</button>
+        
+        <button class="icon-btn" id="cartBtn" type="button" aria-label="Open Shopping Cart">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.76L20 8H6.2"/>
+            <circle cx="9.5" cy="20" r="1.3"/>
+            <circle cx="17.5" cy="20" r="1.3"/>
+          </svg>
+          <span class="badge" id="cartCount">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- ========================================== -->
+    <!-- VIEW 1: STOREFRONT VIEW                    -->
+    <!-- ========================================== -->
+    <div id="storefrontView">
+      <!-- ===== HERO ===== -->
+      <section class="hero">
+        <div class="container hero-inner">
+          <div class="hero-copy">
+            <p class="eyebrow">The Philippines' photography marketplace</p>
+            <h1>Gear that sees<br />what you see.</h1>
+            <p class="lead">Authentic cameras and lenses from Sony, Canon, Fujifilm, and Nikon. Protected by single-transaction concurrency checkout, priced in pesos.</p>
+            <div class="hero-cta">
+              <a href="#catalog" class="btn btn-primary">Shop collection</a>
+              <a href="/seller.html" class="btn btn-outline" id="heroSellerBtn">Merchant Center</a>
+            </div>
+            <div class="hero-stats">
+              <div class="hero-stat-item">
+                <span class="stat-number">₱0</span>
+                <span class="stat-label">Checkout fee on GCash & Maya</span>
+              </div>
+              <div class="hero-stat-sep" aria-hidden="true">·</div>
+              <div class="hero-stat-item">
+                <span class="stat-number">100%</span>
+                <span class="stat-label">Atomic stock concurrency</span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <svg viewBox="0 0 320 320" class="lens-art">
+              <circle cx="160" cy="160" r="150" class="ring r1"/>
+              <circle cx="160" cy="160" r="118" class="ring r2"/>
+              <circle cx="160" cy="160" r="82" class="ring r3"/>
+              <circle cx="160" cy="160" r="46" class="ring r4"/>
+              <circle cx="160" cy="160" r="16" class="ring r5"/>
+              <circle cx="124" cy="124" r="10" class="glint"/>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== CATALOG ===== -->
+      <section class="catalog container" id="catalog">
+        <div class="catalog-head">
+          <div>
+            <h2>Shop the collection</h2>
+            <p class="muted" id="resultCount">Loading gear…</p>
+          </div>
+          <label class="sort">
+            <span class="sr-only">Sort products</span>
+            <select id="sortSelect">
+              <option value="newest">Newest first</option>
+              <option value="price-asc">Price: Low to high</option>
+              <option value="price-desc">Price: High to low</option>
+              <option value="name">Name A–Z</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="filters">
+          <div class="chip-group" id="categoryChips" role="group" aria-label="Category filter">
+            <button class="chip active" data-filter="all">All Gear</button>
+            <button class="chip" data-filter="mirrorless">Mirrorless</button>
+            <button class="chip" data-filter="dslr">DSLR</button>
+            <button class="chip" data-filter="full-frame">Full-frame</button>
+            <button class="chip" data-filter="zoom">Zoom lenses</button>
+            <button class="chip" data-filter="prime">Prime lenses</button>
+          </div>
+          <div class="chip-group" id="brandChips" role="group" aria-label="Brand filter">
+            <button class="chip small active" data-brand="all">All brands</button>
+            <button class="chip small" data-brand="Sony">Sony</button>
+            <button class="chip small" data-brand="Canon">Canon</button>
+            <button class="chip small" data-brand="Fujifilm">Fujifilm</button>
+            <button class="chip small" data-brand="Nikon">Nikon</button>
+          </div>
+        </div>
+
+        <!-- Product Grid with smooth transitions & hover zoom -->
+        <div class="product-grid" id="productGrid" aria-live="polite"></div>
+        
+        <div class="empty-state" id="emptyState" hidden>
+          <p>No products match your selected filters.</p>
+          <button class="btn btn-outline" id="resetFilters" type="button">Reset all filters</button>
+        </div>
+      </section>
+
+      <!-- ===== TRUST & PAYMENT BADGES ===== -->
+      <section class="trust">
+        <div class="container trust-grid">
+          <div>
+            <h3>Atomic transaction safety</h3>
+            <p class="muted">PostgreSQL row-level locking guarantees two buyers cannot buy the same last unit simultaneously.</p>
+          </div>
+          <div>
+            <h3>Philippine native payments</h3>
+            <p class="muted">Instant checkout support for GCash, Maya, and major Philippine Bank Transfers.</p>
+          </div>
+          <div>
+            <h3>Merchant Center analytics</h3>
+            <p class="muted">Real-time inventory alerts, order volume tracking, and revenue calculation in Philippine Pesos (₱).</p>
+          </div>
+        </div>
+        <div class="container pay-row" aria-label="Accepted payment methods">
+          <span class="pay-pill">GCash</span>
+          <span class="pay-pill">Maya</span>
+          <span class="pay-pill">Bank Transfer (BDO / BPI / UB)</span>
+          <span class="pay-pill">Cash on Delivery</span>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>© <span id="year">2026</span> Camera Hub Philippines. All rights reserved.</span>
+      <span class="muted font-mono tabular-nums">Transaction Safety: PostgreSQL Concurrency · Prices in PHP (₱)</span>
+    </div>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- SLIDE-OUT CART PANEL / DRAWER              -->
+  <!-- ========================================== -->
+  <div class="cart-drawer-container" id="cartDrawer" hidden>
+    <div class="cart-backdrop" id="cartBackdrop"></div>
+    <aside class="cart-panel" aria-label="Shopping Cart">
+      <div class="cart-panel-header">
+        <div class="cart-title-row">
+          <h3>Shopping Cart</h3>
+          <span class="cart-badge-pill" id="cartDrawerCount">0 items</span>
+        </div>
+        <button class="icon-btn-close" id="closeCartBtn" aria-label="Close Cart">&times;</button>
+      </div>
+
+      <div class="cart-panel-body" id="cartItemsContainer">
+        <!-- Cart item list injected here -->
+      </div>
+
+      <div class="cart-panel-footer" id="cartFooter" hidden>
+        <div class="cart-summary-lines">
+          <div class="summary-line">
+            <span>Subtotal</span>
+            <span class="font-mono tabular-nums" id="cartSubtotal">₱0</span>
+          </div>
+          <div class="summary-line">
+            <span>Shipping (Nationwide PH)</span>
+            <span class="text-success">FREE</span>
+          </div>
+          <div class="summary-line total-line">
+            <span>Total</span>
+            <span class="price-strong font-mono tabular-nums" id="cartTotal">₱0</span>
+          </div>
+        </div>
+
+        <div class="cart-safe-note">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Stock reserved atomically upon checkout</span>
+        </div>
+
+        <p class="cart-auth-warning" id="cartAuthWarning" hidden>
+          ⚠️ Customer login required to checkout.
+        </p>
+
+        <button class="btn btn-primary btn-block checkout-trigger-btn" id="proceedCheckoutBtn" type="button">
+          Proceed to Checkout
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- DEDICATED CHECKOUT MODAL                   -->
+  <!-- ========================================== -->
+  <div class="modal" id="checkoutModal" hidden>
+    <div class="modal-backdrop" id="checkoutBackdrop"></div>
+    <div class="modal-card checkout-card" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
+      <button class="modal-close" id="closeCheckoutBtn" aria-label="Close">&times;</button>
+      
+      <div class="checkout-header">
+        <span class="checkout-step-pill">Safe Checkout</span>
+        <h3 id="checkoutTitle">Confirm Your Order</h3>
+        <p class="muted">Enter your delivery details and choose a Philippine payment method.</p>
+      </div>
+
+      <form id="checkoutForm" novalidate>
+        <!-- Customer & Delivery Fields -->
+        <div class="checkout-section-block">
+          <h4 class="section-subhead">1. Delivery Destination</h4>
+          <div class="form-row">
+            <label>Full Name
+              <input type="text" id="custName" placeholder="Juan Dela Cruz" required autocomplete="name" />
+            </label>
+            <label>PH Contact Number
+              <input type="tel" id="custPhone" placeholder="0917 123 4567" required autocomplete="tel" />
+            </label>
+          </div>
+          <div class="form-row">
+            <label>Street Address / Unit / Bldg
+              <input type="text" id="custAddress" placeholder="Unit 402, Legaspi Towers 300, Roxas Blvd" required autocomplete="street-address" />
+            </label>
+            <label>City / Province
+              <input type="text" id="custCity" placeholder="Makati City, Metro Manila" required autocomplete="address-level2" />
+            </label>
+          </div>
+        </div>
+
+        <!-- Philippine Payment Selection Interface -->
+        <div class="checkout-section-block">
+          <h4 class="section-subhead">2. Payment Method</h4>
+          
+          <div class="payment-options-grid">
+            <label class="pay-radio-card active">
+              <input type="radio" name="payMethod" value="gcash" checked />
+              <div class="pay-card-content">
+                <div class="pay-header">
+                  <span class="pay-name">GCash</span>
+                  <span class="pay-tag-instant">Instant</span>
+                </div>
+                <span class="pay-desc">Pay via GCash e-wallet (0% transfer fee)</span>
+              </div>
+            </label>
+
+            <label class="pay-radio-card">
+              <input type="radio" name="payMethod" value="maya" />
+              <div class="pay-card-content">
+                <div class="pay-header">
+                  <span class="pay-name">Maya</span>
+                  <span class="pay-tag-instant">Instant</span>
+                </div>
+                <span class="pay-desc">Pay via Maya wallet or card</span>
+              </div>
+            </label>
+
+            <label class="pay-radio-card">
+              <input type="radio" name="payMethod" value="bank_transfer" />
+              <div class="pay-card-content">
+                <div class="pay-header">
+                  <span class="pay-name">Bank Transfer</span>
+                  <span class="pay-tag-biz">BDO / BPI / UB</span>
+                </div>
+                <span class="pay-desc">Direct online bank deposit transfer</span>
+              </div>
+            </label>
+          </div>
+
+          <!-- Dynamic payment instruction preview -->
+          <div class="payment-instruction-box" id="payInstructions">
+            <div class="inst-icon">📱</div>
+            <div class="inst-copy">
+              <strong>GCash Payment Simulation</strong>
+              <p>Simulates real-time e-wallet debit. Stock is decremented in PostgreSQL atomically.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Summary Confirmation -->
+        <div class="checkout-summary-box">
+          <div class="summary-line">
+            <span>Items (<span id="coItemCount">0</span>):</span>
+            <span class="font-mono tabular-nums" id="coSubtotal">₱0</span>
+          </div>
+          <div class="summary-line">
+            <span>Express Shipping:</span>
+            <span class="text-success">FREE</span>
+          </div>
+          <div class="summary-line grand-total">
+            <span>Amount Due:</span>
+            <span class="price-strong font-mono tabular-nums" id="coTotal">₱0</span>
+          </div>
+        </div>
+
+        <p class="form-msg" id="checkoutMsg" role="alert"></p>
+
+        <button class="btn btn-primary btn-block submit-order-btn" type="submit" id="checkoutSubmitBtn">
+          <span class="btn-text">Confirm & Pay</span>
+          <span class="btn-spinner" hidden></span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- PAYMENT SUCCESS / RECEIPT MODAL            -->
+  <!-- ========================================== -->
+  <div class="modal" id="paymentSuccessModal" hidden>
+    <div class="modal-backdrop" id="successBackdrop"></div>
+    <div class="modal-card receipt-card" role="dialog" aria-modal="true">
+      <div class="receipt-success-icon">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+
+      <h3>Payment Successful</h3>
+      <p class="muted">Your order has been recorded and inventory decremented in the database.</p>
+
+      <div class="receipt-box">
+        <div class="receipt-line">
+          <span class="muted">Reference Number</span>
+          <span class="font-mono receipt-ref" id="recRef">CH-20261010-XXXX</span>
+        </div>
+        <div class="receipt-line">
+          <span class="muted">Payment Method</span>
+          <span class="receipt-pay" id="recMethod">GCash</span>
+        </div>
+        <div class="receipt-line">
+          <span class="muted">Recipient</span>
+          <span id="recCustomer">Juan Dela Cruz</span>
+        </div>
+        <div class="receipt-line">
+          <span class="muted">Total Paid</span>
+          <span class="font-mono tabular-nums receipt-amount" id="recAmount">₱0</span>
+        </div>
+        <div class="receipt-line">
+          <span class="muted">Delivery Status</span>
+          <span class="receipt-status">Preparing Shipment</span>
+        </div>
+      </div>
+
+      <div class="receipt-actions">
+        <button class="btn btn-primary btn-block" id="recViewOrdersBtn" type="button">Track in My Orders</button>
+        <button class="btn btn-outline btn-block" id="recContinueBtn" type="button">Continue Shopping</button>
+        <button class="btn btn-ghost btn-block" id="recMerchantBtn" type="button" hidden>View in Seller Hub</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- AUTH MODAL (BUYER REGISTRATION & LOGIN)    -->
+  <!-- ========================================== -->
+  <div class="modal" id="authModal" hidden>
+    <div class="modal-backdrop" id="authBackdrop"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button class="modal-close" id="closeAuthBtn" aria-label="Close">&times;</button>
+      
+      <!-- Buyer Portal Badge -->
+      <div class="portal-type-indicator" id="portalTypeIndicator">
+        <span class="portal-badge" id="portalBadge">Customer Account</span>
+        <span class="portal-note" id="portalNote">Browsing & Order Tracking</span>
+      </div>
+
+      <h3 id="authTitle">Welcome back</h3>
+      
+      <!-- Primary Tabs: Login vs Sign Up -->
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-mode="login" role="tab">Log in</button>
+        <button class="tab" data-mode="signup" role="tab">Sign up</button>
+      </div>
+
+      <form id="authForm" novalidate>
+        <div class="signup-only" hidden>
+          <label>Full name
+            <input type="text" id="fullName" autocomplete="name" placeholder="e.g. Maria Santos" />
+          </label>
+        </div>
+
+        <label>Email
+          <input type="email" id="authEmail" autocomplete="email" required placeholder="you@domain.com" />
+        </label>
+        <label>Password
+          <input type="password" id="authPassword" autocomplete="current-password" minlength="6" required />
+        </label>
+
+        <p class="form-msg" id="authMsg" role="alert"></p>
+        <button class="btn btn-primary btn-block" type="submit" id="authSubmit">Log in</button>
+      </form>
+
+      <div style="margin-top:16px; padding-top:12px; border-top:1px dashed var(--gray-200); font-size:0.78rem; text-align:center; color:var(--gray-500);">
+        Camera Hub Staff? <a href="/seller.html" style="color:var(--black); font-weight:600; text-decoration:underline;">Access Seller Portal →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- BUYER ORDERS & PURCHASES TRACKING MODAL    -->
+  <!-- ========================================== -->
+  <div class="modal" id="buyerOrdersModal" hidden>
+    <div class="modal-backdrop" id="buyerOrdersBackdrop"></div>
+    <div class="modal-card buyer-orders-card" role="dialog" aria-modal="true" aria-labelledby="buyerOrdersTitle">
+      <button class="modal-close" id="closeBuyerOrdersBtn" aria-label="Close">&times;</button>
+      <div class="buyer-orders-header">
+        <h3 id="buyerOrdersTitle">My Purchases</h3>
+        <p class="muted">Track your gear delivery status from dispatch to arrival.</p>
+      </div>
+
+      <!-- Shopee/Lazada style stage tabs for Buyer -->
+      <div class="fulfillment-tab-group buyer-stage-tabs" id="buyerOrderTabs">
+        <button class="stage-tab active" data-stage="all">All</button>
+        <button class="stage-tab" data-stage="to-ship">To Ship <span class="tab-count" id="buyerCountToShip">0</span></button>
+        <button class="stage-tab" data-stage="to-receive">To Receive <span class="tab-count" id="buyerCountToReceive">0</span></button>
+        <button class="stage-tab" data-stage="completed">Completed <span class="tab-count" id="buyerCountCompleted">0</span></button>
+      </div>
+
+      <div class="buyer-orders-list" id="buyerOrdersList">
+        <!-- Rendered via script.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Supabase Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Application JS Logic -->
+  <script type="module" src="/script.js"></script>
+</body>
+</html>

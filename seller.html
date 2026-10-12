@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Camera Hub – Official Merchant Center & Seller Dashboard</title>
+  <meta name="description" content="Exclusive seller management portal for Camera Hub Philippines. Monitor live inventory, fulfillment pipeline, and revenue analytics." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+  <!-- ===== DEDICATED SELLER HEADER ===== -->
+  <header class="seller-page-header">
+    <div class="container seller-header-inner">
+      <div class="seller-brand-cluster">
+        <a href="/" class="logo" aria-label="Camera Hub home">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/>
+            <circle cx="12" cy="13.5" r="3.5"/>
+          </svg>
+          <span class="logo-text">CAMERA<span class="logo-accent">HUB</span></span>
+        </a>
+        <span class="merchant-tag">Merchant Center</span>
+        <span class="realtime-pill" title="Connected to Supabase PostgreSQL Realtime">
+          <span class="pulse-dot"></span>
+          <span>Supabase Live</span>
+        </span>
+      </div>
+
+      <div class="seller-header-right">
+        <span class="user-chip" id="sellerUserChip" hidden>🏪 Camera Hub (Seller)</span>
+        <a href="/" class="btn btn-outline btn-sm">← View Storefront</a>
+        <button id="sellerLogoutBtn" class="btn btn-ghost btn-sm" type="button" hidden>Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ========================================== -->
+    <!-- GATE 1: CAMERA HUB SELLER AUTH GATE        -->
+    <!-- ========================================== -->
+    <div class="seller-auth-gate" id="sellerAuthGate">
+      <div class="seller-login-card">
+        <div class="seller-login-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <h2>Camera Hub Merchant Portal</h2>
+        <p class="muted">Sole Seller & Inventory Management System</p>
+
+        <div class="single-seller-notice">
+          <strong>Single-Seller Architecture</strong>
+          <span>Camera Hub is the sole authorized seller on this platform. Public seller registrations are disabled. Only Camera Hub operations have merchant access.</span>
+        </div>
+
+        <!-- Quick 1-Click Access for Owner -->
+        <button class="quick-seller-access-btn" id="quickSellerLoginBtn" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          Sign in as Camera Hub (Official Store)
+        </button>
+
+        <div class="or-divider">
+          <span>Or sign in with credentials</span>
+        </div>
+
+        <form id="sellerLoginForm" novalidate>
+          <label style="text-align:left; display:flex; flex-direction:column; gap:6px; margin-bottom:12px; font-size:0.82rem; font-weight:600; color:var(--gray-700);">
+            Seller Email
+            <input type="email" id="sellerLoginEmail" value="seller@camerahub.ph" required style="padding:10px 12px; border:1px solid var(--gray-300); border-radius:var(--radius-sm); font-size:0.92rem;" />
+          </label>
+          <label style="text-align:left; display:flex; flex-direction:column; gap:6px; margin-bottom:16px; font-size:0.82rem; font-weight:600; color:var(--gray-700);">
+            Password
+            <input type="password" id="sellerLoginPassword" placeholder="••••••••" required style="padding:10px 12px; border:1px solid var(--gray-300); border-radius:var(--radius-sm); font-size:0.92rem;" />
+          </label>
+
+          <p class="form-msg" id="sellerLoginMsg" role="alert" style="margin-bottom:12px; min-height:1.2em; font-size:0.85rem;"></p>
+          <button class="btn btn-primary btn-block" type="submit" id="sellerLoginSubmitBtn">Access Merchant Center</button>
+          <button class="btn btn-ghost btn-block" id="sellerForgotPasswordBtn" type="button" style="margin-top:10px;">Forgot password?</button>
+        </form>
+
+        <p class="form-msg" id="sellerResetMsg" role="alert" style="margin-top:12px; min-height:1.2em; font-size:0.85rem;"></p>
+
+        <form id="sellerPasswordRecoveryForm" hidden novalidate>
+          <h3 style="margin-bottom:12px;">Choose a new password</h3>
+          <label style="text-align:left; display:flex; flex-direction:column; gap:6px; margin-bottom:12px; font-size:0.82rem; font-weight:600; color:var(--gray-700);">
+            New password
+            <input type="password" id="sellerNewPassword" autocomplete="new-password" minlength="8" required style="padding:10px 12px; border:1px solid var(--gray-300); border-radius:var(--radius-sm); font-size:0.92rem;" />
+          </label>
+          <label style="text-align:left; display:flex; flex-direction:column; gap:6px; margin-bottom:16px; font-size:0.82rem; font-weight:600; color:var(--gray-700);">
+            Confirm new password
+            <input type="password" id="sellerConfirmPassword" autocomplete="new-password" minlength="8" required style="padding:10px 12px; border:1px solid var(--gray-300); border-radius:var(--radius-sm); font-size:0.92rem;" />
+          </label>
+          <p class="form-msg" id="sellerPasswordRecoveryMsg" role="alert" style="margin-bottom:12px;"></p>
+          <button class="btn btn-primary btn-block" type="submit" id="sellerPasswordRecoverySubmit">Save new password</button>
+        </form>
+
+        <div style="margin-top:20px; font-size:0.82rem;">
+          <a href="/" style="color:var(--gray-600); text-decoration:underline;">← Return to Buyer Storefront</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: DEDICATED SELLER DASHBOARD VIEW    -->
+    <!-- ========================================== -->
+    <div id="sellerDashboardContent" hidden>
+      <div class="seller-header-banner">
+        <div class="container seller-banner-inner">
+          <div>
+            <div class="seller-meta-row">
+              <span class="seller-badge">Sole Merchant</span>
+              <span class="seller-id-text">Camera Hub Official Store</span>
+              <span class="realtime-pill" title="Connected to Supabase PostgreSQL Realtime via WebSockets">
+                <span class="pulse-dot"></span>
+                <span>Supabase Live</span>
+              </span>
+            </div>
+            <h2>Merchant Analytics & Inventory</h2>
+            <p class="muted">Real-time stock alerts, sales revenue in PHP ₱, and product management.</p>
+          </div>
+          <div class="seller-actions">
+            <button class="btn btn-outline" id="refreshAllBtn" type="button">Refresh Live Data</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="container seller-content">
+        <!-- Low Stock / Out of Stock Banner (Shown dynamically) -->
+        <div class="stock-alert-banner" id="stockAlertBanner" hidden>
+          <div class="alert-icon">⚠️</div>
+          <div class="alert-body">
+            <strong>Inventory Attention Needed</strong>
+            <p id="stockAlertMessage">3 products have low stock (≤ 3 units) or are sold out.</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="scrollToStockBtn" type="button">View listings</button>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="seller-metrics-grid">
+          <div class="metric-card">
+            <span class="metric-title">Total Sales Revenue</span>
+            <div class="metric-value font-mono tabular-nums" id="metricRevenue">₱0</div>
+            <span class="metric-sub text-muted">From completed customer checkouts</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-title">Total Orders</span>
+            <div class="metric-value font-mono tabular-nums" id="metricOrders">0</div>
+            <span class="metric-sub text-muted">Atomic transaction checkouts</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-title">Low & Out-of-Stock</span>
+            <div class="metric-value font-mono tabular-nums alert-num" id="metricLowStock">0</div>
+            <span class="metric-sub text-muted">Inventory at 0 or ≤ 3 units</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-title">Active Listings</span>
+            <div class="metric-value font-mono tabular-nums" id="metricListings">0</div>
+            <span class="metric-sub text-muted">Products currently published</span>
+          </div>
+        </div>
+
+        <!-- SELLER VISUALIZATION CHARTS & ANALYTICS -->
+        <div class="seller-charts-grid">
+          <!-- Chart 1: Revenue Velocity & Trend (SVG Line & Area) -->
+          <div class="chart-card revenue-chart-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Revenue Performance</h3>
+                <p class="muted">Daily checkout sales volume in Philippine Pesos (₱)</p>
+              </div>
+              <div class="chart-legend">
+                <span class="legend-indicator"></span>
+                <span class="font-mono text-muted" style="font-size:0.75rem;">Daily Net (₱)</span>
+              </div>
+            </div>
+
+            <!-- SVG Visual Area Curve -->
+            <div class="svg-chart-container">
+              <svg viewBox="0 0 650 200" class="revenue-svg" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#0a0a0a" stop-opacity="0.22" />
+                    <stop offset="100%" stop-color="#0a0a0a" stop-opacity="0.0" />
+                  </linearGradient>
+                </defs>
+                <!-- Horizontal Guide Lines -->
+                <line x1="40" y1="30" x2="630" y2="30" stroke="#e5e5e5" stroke-dasharray="3 3" />
+                <line x1="40" y1="80" x2="630" y2="80" stroke="#e5e5e5" stroke-dasharray="3 3" />
+                <line x1="40" y1="130" x2="630" y2="130" stroke="#e5e5e5" stroke-dasharray="3 3" />
+                <line x1="40" y1="170" x2="630" y2="170" stroke="#d4d4d4" stroke-width="1.2" />
+
+                <!-- Area Fill -->
+                <polygon points="50,170 50,140 140,110 230,135 320,65 410,90 500,45 610,75 610,170" fill="url(#revGrad)" />
+
+                <!-- Stroke Line -->
+                <polyline points="50,140 140,110 230,135 320,65 410,90 500,45 610,75" fill="none" stroke="#0a0a0a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                <!-- Data Node Circles -->
+                <circle cx="50" cy="140" r="4.5" fill="#ffffff" stroke="#0a0a0a" stroke-width="2.2" />
+                <circle cx="140" cy="110" r="4.5" fill="#ffffff" stroke="#0a0a0a" stroke-width="2.2" />
+                <circle cx="230" cy="135" r="4.5" fill="#ffffff" stroke="#0a0a0a" stroke-width="2.2" />
+                <circle cx="320" cy="65" r="4.5" fill="#ffffff" stroke="#0a0a0a" stroke-width="2.2" />
+                <circle cx="410" cy="90" r="4.5" fill="#ffffff" stroke="#0a0a0a" stroke-width="2.2" />
+                <circle cx="500" cy="45" r="5.5" fill="#0a0a0a" stroke="#ffffff" stroke-width="2.2" />
+                <circle cx="610" cy="75" r="4.5" fill="#ffffff" stroke="#0a0a0a" stroke-width="2.2" />
+              </svg>
+            </div>
+
+            <!-- X-Axis Labels -->
+            <div class="chart-xaxis font-mono tabular-nums">
+              <span>Mon</span>
+              <span>Tue</span>
+              <span>Wed</span>
+              <span>Thu</span>
+              <span>Fri</span>
+              <span class="active-day">Sat (Peak ₱219k)</span>
+              <span>Today</span>
+            </div>
+
+            <!-- Telemetry summary cards under chart -->
+            <div class="chart-footer-metrics">
+              <div>
+                <span class="muted" style="font-size:0.75rem;">7-Day Peak</span>
+                <strong class="font-mono tabular-nums" style="display:block; font-size:1rem;" id="chartPeakMetric">₱219,900</strong>
+              </div>
+              <div class="stat-sep" aria-hidden="true">|</div>
+              <div>
+                <span class="muted" style="font-size:0.75rem;">Avg Order Value</span>
+                <strong class="font-mono tabular-nums" style="display:block; font-size:1rem;" id="chartAvgMetric">₱124,250</strong>
+              </div>
+              <div class="stat-sep" aria-hidden="true">|</div>
+              <div>
+                <span class="muted" style="font-size:0.75rem;">Checkout Conversion</span>
+                <strong class="font-mono tabular-nums" style="display:block; font-size:1rem;">98.4%</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 2: Category Breakdown & Stock Health -->
+          <div class="chart-card breakdown-chart-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Gear Distribution</h3>
+                <p class="muted">Product mix & inventory health status</p>
+              </div>
+            </div>
+
+            <div class="progress-breakdown-list">
+              <div class="breakdown-item">
+                <div class="breakdown-info">
+                  <span class="breakdown-label">Mirrorless Cameras</span>
+                  <span class="font-mono tabular-nums" id="distMirrorless">58% · ₱459,880</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" id="fillMirrorless" style="width: 58%;"></div>
+                </div>
+              </div>
+
+              <div class="breakdown-item">
+                <div class="breakdown-info">
+                  <span class="breakdown-label">Lenses (Zoom & Prime)</span>
+                  <span class="font-mono tabular-nums" id="distLenses">29% · ₱209,980</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" id="fillLenses" style="width: 29%;"></div>
+                </div>
+              </div>
+
+              <div class="breakdown-item">
+                <div class="breakdown-info">
+                  <span class="breakdown-label">DSLR Bodies</span>
+                  <span class="font-mono tabular-nums" id="distDslr">13% · ₱89,000</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" id="fillDslr" style="width: 13%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="inventory-status-bar-box">
+              <div class="status-bar-head">
+                <span class="muted" style="font-size:0.78rem; font-weight:700; text-transform:uppercase;">Stock Health Velocity</span>
+                <span class="stock-tag in-stock" id="stockHealthTag">82% Operational</span>
+              </div>
+              <div class="segmented-health-bar">
+                <div class="segment seg-healthy" id="segHealthy" style="width: 75%;" title="In Stock"></div>
+                <div class="segment seg-low" id="segLow" style="width: 15%;" title="Low Stock ≤ 3"></div>
+                <div class="segment seg-out" id="segOut" style="width: 10%;" title="Sold Out"></div>
+              </div>
+              <div class="segmented-legend font-mono">
+                <span><span class="dot-ind healthy"></span> In Stock (<span id="pctHealthy">75</span>%)</span>
+                <span><span class="dot-ind low"></span> Low (<span id="pctLow">15</span>%)</span>
+                <span><span class="dot-ind out"></span> Sold out (<span id="pctOut">10</span>%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seller Tabs / Section Split -->
+        <div class="seller-layout-grid">
+          <!-- Left: Product Management Form -->
+          <div class="seller-form-card">
+            <div class="card-head-compact">
+              <h3>Add New Camera or Lens</h3>
+              <p class="muted">Upload product details and connect image to Supabase Storage.</p>
+            </div>
+
+            <form id="newProductForm" novalidate>
+              <div class="form-row">
+                <label>Product Name
+                  <input type="text" id="pName" placeholder="e.g. Sony Alpha 7 IV" required />
+                </label>
+                <label>Brand
+                  <select id="pBrand" required>
+                    <option value="Sony">Sony</option>
+                    <option value="Canon">Canon</option>
+                    <option value="Fujifilm">Fujifilm</option>
+                    <option value="Nikon">Nikon</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="form-row">
+                <label>Category
+                  <select id="pCategory" required>
+                    <option value="camera">Camera Body</option>
+                    <option value="lens">Lens</option>
+                  </select>
+                </label>
+                <label>Subcategory
+                  <select id="pSubcategory" required>
+                    <option value="mirrorless">Mirrorless</option>
+                    <option value="dslr">DSLR</option>
+                    <option value="full-frame">Full-frame</option>
+                    <option value="zoom">Zoom Lens</option>
+                    <option value="prime">Prime Lens</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="form-row">
+                <label>Price in PHP (₱)
+                  <input type="number" id="pPrice" placeholder="e.g. 145000" min="1" step="100" required />
+                </label>
+                <label>Inventory Stock
+                  <input type="number" id="pStock" placeholder="e.g. 5" min="0" step="1" required />
+                </label>
+              </div>
+
+              <!-- Camera / Lens Specs (Perfected Equal Layout) -->
+              <div class="specs-box">
+                <div class="specs-title">Technical Specifications</div>
+                <div class="form-row" id="cameraSpecsFields">
+                  <label>Sensor Size
+                    <input type="text" id="pSpecSensor" placeholder="e.g. 33MP Full-Frame BSI" />
+                  </label>
+                  <label>Video Resolution
+                    <input type="text" id="pSpecVideo" placeholder="e.g. 4K 60p 10-Bit 4:2:2" />
+                  </label>
+                </div>
+                <div class="form-row" id="lensSpecsFields" hidden>
+                  <label>Focal Length & Aperture
+                    <input type="text" id="pSpecFocal" placeholder="e.g. 24-70mm f/2.8" />
+                  </label>
+                  <label>Mount
+                    <input type="text" id="pSpecMount" placeholder="e.g. Sony E-Mount" />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Image Handling (Supabase Storage integration) -->
+              <div class="image-upload-section">
+                <label class="image-label">Product Image (Supabase Storage: 'product-images')</label>
+                
+                <div class="image-source-tabs">
+                  <button type="button" class="img-tab active" data-img-mode="preset">Studio Presets</button>
+                  <button type="button" class="img-tab" data-img-mode="url">Image URL</button>
+                  <button type="button" class="img-tab" data-img-mode="file">Storage Upload</button>
+                </div>
+
+                <div id="imgModePreset" class="img-mode-panel">
+                  <div class="preset-pickers" id="presetPickers">
+                    <!-- Populated via seller.js -->
+                  </div>
+                </div>
+
+                <div id="imgModeUrl" class="img-mode-panel" hidden>
+                  <input type="url" id="pImageUrl" placeholder="https://...supabase.co/storage/v1/object/public/product-images/gear.jpg" />
+                  <span class="field-hint">Direct public URL from Supabase Storage or CDN</span>
+                </div>
+
+                <div id="imgModeFile" class="img-mode-panel" hidden>
+                  <div class="file-drop-area" id="fileDropArea">
+                    <input type="file" id="pImageFile" accept="image/*" />
+                    <p>Click to select image file to upload to <code>product-images</code></p>
+                    <span class="field-hint">Supports JPEG, PNG, WebP (Max 5MB)</span>
+                  </div>
+                </div>
+
+                <!-- Preview container -->
+                <div class="image-preview-box" id="imagePreviewBox">
+                  <img id="imagePreviewImg" src="" alt="Preview" hidden />
+                  <span id="imagePreviewPlaceholder" class="muted">No image selected</span>
+                </div>
+              </div>
+
+              <label>Description
+                <textarea id="pDescription" rows="2" placeholder="Brief description of cosmetic condition, warranty, or features..."></textarea>
+              </label>
+
+              <button class="btn btn-primary btn-block" type="submit" id="submitProductBtn">
+                Publish Product to Marketplace
+              </button>
+            </form>
+          </div>
+
+          <!-- Right: Active Listings & Orders Table -->
+          <div class="seller-tables-column">
+            <!-- Active Inventory Table -->
+            <div class="seller-table-card">
+              <div class="table-header-row">
+                <div>
+                  <h3>Live Inventory & Stock Status</h3>
+                  <p class="muted">Updates reflect immediately across the storefront.</p>
+                </div>
+                <button class="btn btn-ghost btn-sm" id="refreshSellerDataBtn">Refresh</button>
+              </div>
+
+              <div class="table-responsive seller-inventory-table-wrap">
+                <table class="seller-table" id="sellerInventoryTable">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Brand</th>
+                      <th>Price</th>
+                      <th>Stock Status</th>
+                      <th>Quick Stock</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sellerTableBody">
+                    <!-- Populated via seller.js -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Recent Orders Table with Fulfillment Lifecycle Tabs -->
+            <div class="seller-table-card">
+              <div class="table-header-row">
+                <div>
+                  <h3>Customer Orders & Dispatch</h3>
+                  <p class="muted">Manage order fulfillment from packaging to doorstep delivery.</p>
+                </div>
+                <!-- Shopee/Lazada style fulfillment stage tabs -->
+                <div class="fulfillment-tab-group" id="sellerOrderTabs">
+                  <button class="stage-tab active" data-stage="all">All</button>
+                  <button class="stage-tab" data-stage="to-ship">To Ship <span class="tab-count" id="countToShip">0</span></button>
+                  <button class="stage-tab" data-stage="to-receive">To Receive <span class="tab-count" id="countToReceive">0</span></button>
+                  <button class="stage-tab" data-stage="completed">Completed <span class="tab-count" id="countCompleted">0</span></button>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="seller-table" id="sellerOrdersTable">
+                  <thead>
+                    <tr>
+                      <th>Reference</th>
+                      <th>Customer</th>
+                      <th>Payment</th>
+                      <th>Items</th>
+                      <th>Total Amount</th>
+                      <th>Status Stage</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sellerOrdersBody">
+                    <!-- Populated via seller.js -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>© 2026 Camera Hub Philippines – Official Merchant Center</span>
+      <span class="muted font-mono tabular-nums">Connected to Supabase PostgreSQL Realtime</span>
+    </div>
+  </footer>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Supabase Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Dedicated Seller JavaScript -->
+  <script type="module" src="/seller.js"></script>
+</body>
+</html>

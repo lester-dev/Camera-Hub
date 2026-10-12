@@ -1,0 +1,6 @@
+{
+  "name": "Camera Hub",
+  "description": "Philippines' premier photography marketplace for DSLR, mirrorless cameras, and lenses featuring real-time stock transactions, secure GCash, Maya and Bank Transfer checkout, and seller analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
