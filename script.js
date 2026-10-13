@@ -322,6 +322,7 @@ const PLACEHOLDER_LENS = `<svg class="placeholder" viewBox="0 0 120 120" fill="n
 
 async function loadProducts() {
   let remoteProducts = [];
+  let remoteCatalogLoaded = false;
   if (db) {
     try {
       const { data, error } = await db
@@ -331,6 +332,7 @@ async function loadProducts() {
         .order("created_at", { ascending: false });
 
       if (!error && Array.isArray(data)) {
+        remoteCatalogLoaded = true;
         remoteProducts = data.map((p) => ({
           ...p,
           image_url: getProductImage(p),
@@ -362,13 +364,16 @@ async function loadProducts() {
 
   // Unified Catalog Merge: Defaults < Remote Supabase < Seller Local Products (Highest Priority)
   const productMap = new Map();
-  for (const p of DEFAULT_CATALOG) {
-    productMap.set(String(p.id), { ...p, image_url: getProductImage(p) });
+  if (!remoteCatalogLoaded) {
+    for (const p of DEFAULT_CATALOG) {
+      productMap.set(String(p.id), { ...p, image_url: getProductImage(p) });
+    }
   }
   for (const p of remoteProducts) {
     productMap.set(String(p.id), p);
   }
   for (const p of localProducts) {
+    if (db && remoteCatalogLoaded) continue;
     productMap.set(String(p.id), p);
   }
 
@@ -819,9 +824,9 @@ $$('input[name="payMethod"]').forEach((radio) => {
 // 9. COMPLETE CODE INTEGRATION: DATABASE TRANSACTION (checkoutCart)
 // ==========================================================================
 
-function isRemoteCheckoutUnavailable(error) {
+function isCheckoutRpcUnavailable(error) {
   const text = [error?.message, error?.details, error?.hint].filter(Boolean).join(" ").toLowerCase();
-  return error?.code === "PGRST202" || /does not exist|not found|function .*checkout_cart|checkout_cart.*not|could not find function/.test(text);
+  return error?.code === "PGRST202" || error?.code === "42883" || /function .*checkout_cart|checkout_cart.*not|could not find function/.test(text);
 }
 
 function buildLocalCheckoutOrder(orderDetails) {
@@ -930,10 +935,18 @@ function buildLocalCheckoutOrder(orderDetails) {
 }
 
 /**
- * Handles safe checkout by invoking the PostgreSQL atomic RPC function
- * or falling back gracefully to the browser-local transaction if the remote schema is pending.
+ * Handles checkout through the PostgreSQL atomic RPC when Supabase is configured.
  */
 async function checkoutCart(orderDetails) {
+  if (db) {
+    const invalidProduct = [...state.cart.values()].find(
+      (item) => !isValidUUID(String(item.product.id))
+    );
+    if (invalidProduct) {
+      throw new Error(`"${invalidProduct.product.name}" is not in the online catalog. Refresh the page and add it to your cart again.`);
+    }
+  }
+
   const itemsPayload = [...state.cart.entries()].map(([id, item]) => ({
     product_id: id,
     quantity: item.quantity,
@@ -941,8 +954,15 @@ async function checkoutCart(orderDetails) {
 
   if (db) {
     const { data: authData, error: authError } = await db.auth.getUser();
-    if (authError) throw new Error(`Unable to verify your customer session: ${authError.message}`);
+    if (authError) {
+      if (/auth session missing/i.test(authError.message)) {
+        clearBuyerSession();
+        throw new Error("Your customer session is missing or expired. Please log in again before placing your order.");
+      }
+      throw new Error(`Unable to verify your customer session: ${authError.message}`);
+    }
     if (!authData.user) {
+      clearBuyerSession();
       throw new Error("Please sign in with your customer account before placing an order.");
     }
 
@@ -957,9 +977,8 @@ async function checkoutCart(orderDetails) {
       });
 
       if (error) {
-        if (isRemoteCheckoutUnavailable(error)) {
-          console.warn("checkout_cart RPC missing. Falling back to local checkout flow.", error);
-          return buildLocalCheckoutOrder(orderDetails);
+        if (isCheckoutRpcUnavailable(error)) {
+          throw new Error("Database checkout is not installed yet. Apply the latest Supabase migration, then try again.");
         }
         throw new Error(`Order could not be saved. ${error.message}`);
       }
@@ -1019,10 +1038,6 @@ async function checkoutCart(orderDetails) {
         customer_name: orderDetails.customer_name,
       };
     } catch (rpcError) {
-      if (isRemoteCheckoutUnavailable(rpcError)) {
-        console.warn("checkout_cart RPC missing. Falling back to local checkout flow.", rpcError);
-        return buildLocalCheckoutOrder(orderDetails);
-      }
       throw rpcError;
     }
   }
@@ -1078,8 +1093,17 @@ $("#checkoutForm").addEventListener("submit", async (e) => {
     // Display Simulated Receipt / Success Popup
     showPaymentReceipt(result);
   } catch (err) {
-    msg.className = "form-msg error";
-    msg.textContent = err.message || "Checkout failed. Please try again.";
+    if (/customer session.*missing|please sign in with your customer/i.test(err.message || "")) {
+      state.pendingCheckout = true;
+      closeCheckoutModal();
+      openAuth("login");
+      const authMsg = $("#authMsg");
+      authMsg.className = "form-msg error";
+      authMsg.textContent = "Your customer session is missing or expired. Please log in again to continue checkout.";
+    } else {
+      msg.className = "form-msg error";
+      msg.textContent = err.message || "Checkout failed. Please try again.";
+    }
   } finally {
     submitBtn.disabled = false;
     submitBtn.querySelector(".btn-text").textContent = "Confirm & Pay";
@@ -1218,7 +1242,7 @@ function renderBuyerOrdersList() {
         statusDesc = o.tracking_number
           ? `On the way via courier (${o.tracking_number}). Expect delivery soon.`
           : "Dispatched with courier. Delivery in progress.";
-        actionBtn = `<button class="btn-stage-action btn-confirm-received" data-action="buyer-confirm" data-id="${o.id}">Order Received</button>`;
+        actionBtn = `<button type="button" class="btn-stage-action btn-confirm-received" data-action="buyer-confirm" data-id="${o.id}">Order Received</button>`;
       } else if (isCompleted) {
         badge = `<span class="stage-badge completed">✓ Completed</span>`;
         statusDesc = "Parcel delivered and transaction concluded. Enjoy your camera gear!";
@@ -1455,6 +1479,15 @@ function updateSessionUI() {
   renderBuyerOrdersList();
 }
 
+function clearBuyerSession() {
+  state.session = null;
+  state.profile = null;
+  try {
+    localStorage.removeItem("camerahub_user_session");
+  } catch (e) {}
+  updateSessionUI();
+}
+
 $("#authBtn").addEventListener("click", () => {
   if (state.session) {
     if (db) db.auth.signOut();
@@ -1501,39 +1534,34 @@ $("#authForm").addEventListener("submit", async (e) => {
       const fullName = $("#fullName").value.trim() || email.split("@")[0];
       let authUserId = `user-${Date.now()}`;
 
-      // Try Supabase Auth
       if (db) {
-        try {
-          const { data, error } = await db.auth.signUp({
-            email,
-            password,
-            options: {
-              data: {
-                full_name: fullName,
-                role: "customer",
-              },
+        const { data, error } = await db.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              role: "customer",
             },
-          });
-          if (data?.user?.id) {
-            authUserId = data.user.id;
-          }
-          if (error && !error.message.toLowerCase().includes("rate limit")) {
-            console.warn("Supabase auth note:", error.message);
-          }
-        } catch (err) {
-          console.warn("Supabase signup caught:", err);
+          },
+        });
+        if (error) throw error;
+        if (!data?.session?.user) {
+          msg.className = "form-msg success";
+          msg.textContent = "If an account was created, check your email to confirm your address, then log in before checkout.";
+          return;
         }
+        authUserId = data.session.user.id;
+      } else {
+        saveRegisteredUser({
+          id: authUserId,
+          email,
+          password,
+          role: "customer",
+          full_name: fullName,
+          created_at: new Date().toISOString(),
+        });
       }
-
-      // Save to registry exclusively as customer (Buyer)
-      saveRegisteredUser({
-        id: authUserId,
-        email,
-        password,
-        role: "customer",
-        full_name: fullName,
-        created_at: new Date().toISOString(),
-      });
 
       state.session = { user: { email, id: authUserId } };
       state.profile = { role: "customer", full_name: fullName };
@@ -1556,9 +1584,9 @@ $("#authForm").addEventListener("submit", async (e) => {
     // ==========================================
     // LOG IN FLOW
     // ==========================================
-    let userRole = existing ? existing.role : "customer";
-    let fullName = existing ? existing.full_name : email.split("@")[0];
-    let authUserId = existing?.id || `user-${Date.now()}`;
+    let userRole = !db && existing ? existing.role : "customer";
+    let fullName = !db && existing ? existing.full_name : email.split("@")[0];
+    let authUserId = !db && existing ? existing.id : `user-${Date.now()}`;
 
     // Special recognition for Camera Hub Seller
     if (email === "seller@camerahub.ph" || email === "admin@camerahub.ph") {
@@ -1568,27 +1596,15 @@ $("#authForm").addEventListener("submit", async (e) => {
 
     // Check remote Supabase credentials
     if (db) {
-      try {
-        const { data, error } = await db.auth.signInWithPassword({ email, password });
-        if (!error && data?.user) {
-          authUserId = data.user.id;
-          const meta = data.user.user_metadata || {};
-          if (meta.role) userRole = meta.role;
-          if (meta.full_name) fullName = meta.full_name;
-        } else if (error) {
-          if (!existing) {
-            throw error;
-          } else if (existing.password && existing.password !== password) {
-            throw new Error("Invalid password. Please check your credentials.");
-          }
-        }
-      } catch (sbErr) {
-        if (!existing) {
-          throw sbErr;
-        } else if (existing.password && existing.password !== password) {
-          throw new Error("Invalid password. Please check your credentials.");
-        }
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (!data?.session?.user) {
+        throw new Error("Supabase did not return an active customer session. Please try logging in again.");
       }
+      authUserId = data.session.user.id;
+      const meta = data.session.user.user_metadata || {};
+      if (meta.role) userRole = meta.role;
+      if (meta.full_name) fullName = meta.full_name;
     } else {
       if (existing && existing.password && existing.password !== password) {
         throw new Error("Invalid password. Please check your credentials.");
@@ -1620,31 +1636,7 @@ $("#authForm").addEventListener("submit", async (e) => {
     msg.className = "form-msg error";
 
     if (isRateLimit) {
-      msg.innerHTML = `
-        <strong>Supabase Email Rate Limit Exceeded</strong><br/>
-        <span style="font-size:0.8rem; color:#b91c1c; display:block; margin:4px 0;">
-          Supabase limits confirmation emails to ~3/hr on default settings.
-        </span>
-        <button type="button" class="btn btn-primary btn-sm" id="bypassRateLimitBtn" style="margin-top:8px; width:100%;">
-          Continue with Test Session
-        </button>
-      `;
-
-      const bypassBtn = $("#bypassRateLimitBtn");
-      if (bypassBtn) {
-        bypassBtn.addEventListener("click", () => {
-          const fn = email.split("@")[0];
-          state.session = { user: { email, id: `user-${Date.now()}` } };
-          state.profile = { role: "customer", full_name: fn };
-          closeAuth();
-          updateSessionUI();
-          toast(`Signed in as ${fn}`);
-          if (state.pendingCheckout) {
-            state.pendingCheckout = false;
-            openCheckoutModal();
-          }
-        });
-      }
+      msg.textContent = "Supabase email rate limit reached. Please wait before requesting another confirmation email, or log in if your account is already confirmed.";
     } else {
       msg.textContent = err.message || "Authentication error. Please check your credentials.";
     }
@@ -1877,7 +1869,8 @@ $("#year").textContent = new Date().getFullYear();
 async function restoreUserSession() {
   if (db) {
     try {
-      const { data } = await db.auth.getSession();
+      const { data, error } = await db.auth.getSession();
+      if (error) throw error;
       if (data?.session?.user) {
         const u = data.session.user;
         const meta = u.user_metadata || {};
@@ -1888,6 +1881,12 @@ async function restoreUserSession() {
     } catch (e) {
       console.warn("Session restore note:", e);
     }
+    try {
+      localStorage.removeItem("camerahub_user_session");
+    } catch (e) {
+      console.warn("Could not clear the stale buyer session cache:", e);
+    }
+    return;
   }
 
   try {

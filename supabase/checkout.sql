@@ -2,7 +2,6 @@
 -- The function writes the profile, order, line items, and stock changes atomically.
 
 alter table public.profiles
-  add column if not exists phone text,
   add column if not exists shipping_address text,
   add column if not exists city_province text;
 
@@ -38,6 +37,8 @@ declare
   v_payment_method public.orders.payment_method%type;
   v_order_id uuid;
   v_reference text;
+  v_city text;
+  v_province text;
 begin
   if v_customer_id is null then
     raise exception 'A signed-in customer account is required to place an order.';
@@ -52,24 +53,35 @@ begin
     raise exception 'The order must contain at least one item.';
   end if;
 
-  if lower(trim(p_payment_method)) = 'maya' then
+  if lower(trim(p_payment_method)) = 'gcash' then
+    v_payment_method := 'gcash';
+  elsif lower(trim(p_payment_method)) = 'maya' then
     v_payment_method := 'maya';
   elsif lower(trim(p_payment_method)) = 'bank_transfer' then
     v_payment_method := 'bank_transfer';
   else
-    v_payment_method := 'gcash';
+    raise exception 'Choose a valid payment method.';
+  end if;
+
+  v_city := trim(split_part(p_city_province, ',', 1));
+  v_province := nullif(trim(substr(p_city_province, position(',' in p_city_province) + 1)), '');
+  if v_province is null then
+    v_province := v_city;
   end if;
 
   insert into public.profiles (
-    id, full_name, phone, shipping_address, city_province, role, updated_at
+    id, full_name, phone, address, city, province, shipping_address, city_province, updated_at
   )
   values (
-    v_customer_id, trim(p_customer_name), trim(p_contact_number),
-    trim(p_shipping_address), trim(p_city_province), 'customer', now()
+    v_customer_id, trim(p_customer_name), trim(p_contact_number), trim(p_shipping_address),
+    v_city, v_province, trim(p_shipping_address), trim(p_city_province), now()
   )
   on conflict (id) do update set
     full_name = excluded.full_name,
     phone = excluded.phone,
+    address = excluded.address,
+    city = excluded.city,
+    province = excluded.province,
     shipping_address = excluded.shipping_address,
     city_province = excluded.city_province,
     updated_at = excluded.updated_at;
@@ -105,13 +117,14 @@ begin
 
   insert into public.orders (
     id, reference_number, customer_id, customer_name, customer_email,
-    contact_number, shipping_address, city_province, status,
-    total_amount, payment_method
+    contact_number, shipping_address, city_province, status, total_amount,
+    payment_method, shipping_name, shipping_phone, shipping_city, shipping_province
   )
   values (
     v_order_id, v_reference, v_customer_id, trim(p_customer_name), v_customer_email,
     trim(p_contact_number), trim(p_shipping_address), trim(p_city_province),
-    'processing', v_total, v_payment_method
+    'processing', v_total, v_payment_method, trim(p_customer_name),
+    trim(p_contact_number), v_city, v_province
   );
 
   for v_item in select value from jsonb_array_elements(p_items)

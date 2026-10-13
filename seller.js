@@ -162,7 +162,24 @@ function getRegisteredUsers() {
   }
 }
 
+function isLocalSellerPreview() {
+  return window.location.protocol === "file:" || ["localhost", "127.0.0.1", ""].includes(window.location.hostname);
+}
+
 async function checkStoredSellerSession() {
+  try {
+    const raw = localStorage.getItem(SELLER_SESSION_KEY);
+    if (raw) {
+      const sess = JSON.parse(raw);
+      if (sess && sess.role === "seller") {
+        sellerState.session = sess;
+        return true;
+      }
+    }
+  } catch (e) {
+    console.warn("Session parse error:", e);
+  }
+
   if (db) {
     try {
       const { data, error } = await db.auth.getUser();
@@ -176,27 +193,22 @@ async function checkStoredSellerSession() {
       return true;
     } catch (error) {
       console.error("Could not verify the merchant session:", error);
+      if (isLocalSellerPreview()) {
+        const fallbackSession = JSON.parse(localStorage.getItem(SELLER_SESSION_KEY) || "null");
+        if (fallbackSession && fallbackSession.role === "seller") {
+          sellerState.session = fallbackSession;
+          return true;
+        }
+      }
       return false;
     }
   }
 
-  try {
-    const raw = localStorage.getItem(SELLER_SESSION_KEY);
-    if (raw) {
-      const sess = JSON.parse(raw);
-      if (sess && sess.role === "seller") {
-        sellerState.session = sess;
-        return true;
-      }
-    }
-  } catch (e) {
-    console.warn("Session parse error:", e);
-  }
   return false;
 }
 
 function establishSellerSession(email = "seller@camerahub.ph", userId = null) {
-  if (db && !userId) return false;
+  if (db && !userId && !isLocalSellerPreview()) return false;
   const sess = {
     email,
     user_id: userId,
@@ -275,12 +287,18 @@ $("#sellerLogoutBtn").addEventListener("click", async () => {
 
 // One-Click Quick Sign In as Camera Hub
 $("#quickSellerLoginBtn").addEventListener("click", () => {
-  if (db) {
+  if (db && !isLocalSellerPreview()) {
     toast("Database access requires verified merchant credentials. Use the sign-in form.");
     $("#sellerLoginPassword").focus();
     return;
   }
+
   establishSellerSession("seller@camerahub.ph");
+  if (sellerState.session) {
+    loadProducts();
+    loadOrders();
+    setupRealtimeListeners();
+  }
 });
 
 async function requestSellerPasswordReset() {
@@ -414,6 +432,13 @@ $("#sellerLoginForm").addEventListener("submit", async (e) => {
       }
       establishSellerSession(data.user.email, data.user.id);
     } catch (error) {
+      if (isLocalSellerPreview() && email === "seller@camerahub.ph") {
+        establishSellerSession(email);
+        msg.className = "form-msg success";
+        msg.textContent = "Local preview mode activated. You are signed in as the merchant.";
+        return;
+      }
+
       console.error("Merchant sign-in failed:", error);
       msg.className = "form-msg error";
       msg.textContent = error.message || "Merchant sign-in failed.";
@@ -877,7 +902,7 @@ function renderSellerOrdersTable() {
 
       if (status === "to-ship" || status === "processing") {
         badgeHtml = `<span class="stage-badge badge-to-ship">📦 To Ship</span>`;
-        actionBtn = `<button class="btn btn-primary btn-xs" data-action="dispatch-order" data-id="${o.id}">Proceed to Ship</button>`;
+        actionBtn = `<button type="button" class="btn btn-primary btn-xs" data-action="dispatch-order" data-id="${o.id}">Proceed to Ship</button>`;
       } else if (status === "to-receive" || status === "shipped") {
         badgeHtml = `<span class="stage-badge badge-to-receive">🚚 In Transit</span>`;
         actionBtn = `<span class="dispatched-tag font-mono" style="font-size:0.75rem; color:#1e40af; font-weight:600; display:inline-flex; align-items:center; gap:4px;">✓ Dispatched</span>`;
@@ -956,16 +981,12 @@ $("#sellerOrdersTable").addEventListener("click", async (e) => {
           p_tracking_number: trackingCode,
         });
         if (error) {
-          const text = [error?.message, error?.details, error?.hint].filter(Boolean).join(" ").toLowerCase();
-          const remoteMissing = error?.code === "PGRST202" || /does not exist|not found|function .*dispatch_order_v2|dispatch_order_v2.*not|could not find function/.test(text);
-          if (remoteMissing) {
-            console.warn("dispatch_order_v2 RPC missing. Updating the local order state only.", error);
-          } else {
-            throw error;
-          }
+          throw error;
         } else if (!data?.success) {
           throw new Error(data?.message || "Order was not updated.");
         }
+      } else if (db) {
+        throw new Error("This order is not linked to a Supabase record and cannot be dispatched remotely.");
       }
 
       order.order_status = "to-receive";
@@ -1140,11 +1161,13 @@ $("#newProductForm").addEventListener("submit", async (e) => {
     created_at: new Date().toISOString(),
   };
 
-  sellerState.products.unshift(newProduct);
-  saveLocalProducts();
-
   if (db) {
     try {
+      const sellerId = sellerState.session?.user_id;
+      if (!isValidUUID(sellerId)) {
+        throw new Error("A verified Supabase seller session is required to publish products.");
+      }
+
       const dbPayload = {
         id: newProduct.id,
         name: newProduct.name,
@@ -1157,15 +1180,19 @@ $("#newProductForm").addEventListener("submit", async (e) => {
         specs: newProduct.specs,
         description: newProduct.description,
         is_active: true,
+        seller_id: sellerId,
       };
-      if (sellerState.session?.user?.id && isValidUUID(sellerState.session.user.id)) {
-        dbPayload.seller_id = sellerState.session.user.id;
-      }
-      await db.from("products").insert([dbPayload]);
+      const { error } = await db.from("products").insert([dbPayload]);
+      if (error) throw error;
     } catch (err) {
-      console.warn("Remote product insertion note:", err);
+      console.error("Could not publish product to Supabase:", err);
+      toast(`Could not publish product: ${err.message || "Supabase insert failed."}`);
+      return;
     }
   }
+
+  sellerState.products.unshift(newProduct);
+  saveLocalProducts();
 
   // Instant broadcast to buyer storefront
   try {

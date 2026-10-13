@@ -21,7 +21,7 @@ View your app in AI Studio: https://ai.studio/apps/085ea204-0db0-467d-9788-74fec
 
 ## Supabase checkout and merchant setup
 
-Before using database-backed checkout or dispatch, run [`supabase/checkout.sql`](./supabase/checkout.sql) in the Supabase SQL Editor. Checkout requires a signed-in Supabase customer and atomically writes the profile, order, order items, and stock changes.
+Checkout and dispatch require the latest Supabase migration. Apply pending migrations to the linked project with `npx supabase db push --linked`, or run [`supabase/checkout.sql`](./supabase/checkout.sql) in the Supabase SQL Editor. Checkout requires a signed-in Supabase customer and atomically writes the profile (including phone and delivery address), order, order items, and stock changes. If the database RPC is unavailable, checkout now reports the setup error instead of pretending a local-only order was saved remotely.
 
 Merchant access requires a Supabase Auth account to have `app_metadata.role` set to `seller` by a trusted project administrator. Accounts without this trusted role are denied dashboard access. The browser-local preview sign-in is only available when Supabase is not configured.
 
